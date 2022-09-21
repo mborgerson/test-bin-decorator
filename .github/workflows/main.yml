@@ -49,6 +49,11 @@ jobs:
         run: find .
       - name: merge artifacts
         run: mkdir -p binaries; mv binaries-*/* binaries; rmdir binaries-*
+      - name: put artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries-all
+          path: binaries
       - name: list
         run: find .
       - name: test
