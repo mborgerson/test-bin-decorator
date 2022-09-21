@@ -4,7 +4,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: deps
-        run: sudo apt get install build-essential gcc-multilib clang
+        run: sudo apt-get install -qq build-essential gcc-multilib clang
       - name: clone
         uses: actions/checkout@v2
       - name: build
