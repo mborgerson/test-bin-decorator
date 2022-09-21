@@ -24,6 +24,7 @@ jobs:
           path: binaries
   build-ubuntu:
     runs-on: ubuntu-latest
+    steps:
       - name: deps
         run: sudo apt-get install -qq build-essential gcc-multilib clang
       - name: clone
