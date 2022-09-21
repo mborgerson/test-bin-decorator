@@ -182,6 +182,7 @@ def compiled(text: str, tools: Optional[Sequence[Tool]] = None, **kwargs):
         def outer(self):
             for binary in binaries:
                 with self.subTest(binary=binary):
+                    log.info('Running test %s with binary %s', inner.__name__, binary)
                     if not os.path.exists(binary.path):
                         raise FileNotFoundError('Binary not available for testing')
                     inner(binary)
