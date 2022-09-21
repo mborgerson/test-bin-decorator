@@ -2,8 +2,6 @@ import logging
 import unittest
 import subprocess
 
-import angr
-
 from util_compile_decorator import compiled, main, Binary
 
 
@@ -34,6 +32,7 @@ class BasicTest(unittest.TestCase):
     def test_demo(binary: Binary):
         path = binary.path
         subprocess.check_call(['file', path])
+        import angr
         proj = angr.Project(path, auto_load_libs=False)
         print(proj)
 
