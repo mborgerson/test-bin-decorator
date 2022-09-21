@@ -31,9 +31,7 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update -qy
           sudo apt-get install -y \
-            build-essential \
             clang \
-            gcc-multilib \
             gcc-aarch64-linux-gnu \
             gcc-alpha-linux-gnu \
             gcc-arm-linux-gnueabi \
