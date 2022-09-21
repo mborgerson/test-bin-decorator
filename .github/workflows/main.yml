@@ -30,8 +30,9 @@ jobs:
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update -qy
+          sudo apt-get install -y clang
+          sudo apt-get install -y gcc-multilib
           sudo apt-get install -y \
-            clang \
             gcc-aarch64-linux-gnu \
             gcc-alpha-linux-gnu \
             gcc-arm-linux-gnueabi \
@@ -45,8 +46,7 @@ jobs:
             gcc-riscv64-linux-gnu \
             gcc-s390x-linux-gnu \
             gcc-sh4-linux-gnu \
-            gcc-sparc64-linux-gnu \
-            libc6-dev:i386 gcc:i386
+            gcc-sparc64-linux-gnu
       - name: clone
         uses: actions/checkout@v2
       - name: build
