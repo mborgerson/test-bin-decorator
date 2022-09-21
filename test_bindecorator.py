@@ -67,19 +67,20 @@ class GccTool(Tool):
         'x86':       'gcc',
         'x86_64':    'gcc',
         'aarch64':   'aarch64-linux-gnu-gcc',
-        'alpha':     'alpha-linux-gnu-gcc',
+        # 'alpha':     'alpha-linux-gnu-gcc',
         'arm':       'arm-linux-gnueabi-gcc',
-        'hppa':      'hppa-linux-gnu-gcc',
-        'm68k':      'm68k-linux-gnu-gcc',
+        # 'hppa':      'hppa-linux-gnu-gcc',
+        # 'm68k':      'm68k-linux-gnu-gcc',
         'mips':      'mips-linux-gnu-gcc',
         'mips64':    'mips64-linux-gnuabi64-gcc',
         'mipsel':    'mipsel-linux-gnu-gcc',
         'powerpc':   'powerpc-linux-gnu-gcc',
         'powerpc64': 'powerpc64-linux-gnu-gcc',
-        'riscv64':   'riscv64-linux-gnu-gcc',
+        # 'riscv64':   'riscv64-linux-gnu-gcc',
         's390x':     's390x-linux-gnu-gcc',
-        'sh4':       'sh4-linux-gnu-gcc',
-        'sparc64':   'sparc64-linux-gnu-gcc',
+        # 'sh4':       'sh4-linux-gnu-gcc',
+        # 'sparc64':   'sparc64-linux-gnu-gcc',
+
         # arch_avr
         # arch_soot
     }
