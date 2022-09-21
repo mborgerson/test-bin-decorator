@@ -27,24 +27,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: deps
-        run: sudo apt-get install -qq \
-          build-essential \
-          clang \
-          gcc-multilib \
-          gcc-aarch64-linux-gnu \
-          gcc-alpha-linux-gnu \
-          gcc-arm-linux-gnueabi \
-          gcc-hppa-linux-gnu \
-          gcc-m68k-linux-gnu \
-          gcc-mips-linux-gnu \
-          gcc-mips64-linux-gnuabi64 \
-          gcc-mipsel-linux-gnu \
-          gcc-powerpc-linux-gnu \
-          gcc-powerpc64-linux-gnu \
-          gcc-riscv64-linux-gnu \
-          gcc-s390x-linux-gnu \
-          gcc-sh4-linux-gnu \
-          gcc-sparc64-linux-gnu
+        run: |
+          sudo apt-get update
+          sudo apt-get install -qq \
+            build-essential \
+            clang \
+            gcc-multilib \
+            gcc-aarch64-linux-gnu \
+            gcc-alpha-linux-gnu \
+            gcc-arm-linux-gnueabi \
+            gcc-hppa-linux-gnu \
+            gcc-m68k-linux-gnu \
+            gcc-mips-linux-gnu \
+            gcc-mips64-linux-gnuabi64 \
+            gcc-mipsel-linux-gnu \
+            gcc-powerpc-linux-gnu \
+            gcc-powerpc64-linux-gnu \
+            gcc-riscv64-linux-gnu \
+            gcc-s390x-linux-gnu \
+            gcc-sh4-linux-gnu \
+            gcc-sparc64-linux-gnu
       - name: clone
         uses: actions/checkout@v2
       - name: build
