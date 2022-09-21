@@ -63,21 +63,34 @@ class Tool:
 class GccTool(Tool):
     """GCC compiler"""
     name = 'gcc'
+    arch_to_gcc = {
+        'x86':       'gcc',
+        'x86_64':    'gcc',
+        'aarch64':   'aarch64-linux-gnu-gcc',
+        'alpha':     'alpha-linux-gnu-gcc',
+        'arm':       'arm-linux-gnueabi-gcc',
+        'hppa':      'hppa-linux-gnu-gcc',
+        'm68k':      'm68k-linux-gnu-gcc',
+        'mips':      'mips-linux-gnu-gcc',
+        'mips64':    'mips64-linux-gnuabi64-gcc',
+        'mipsel':    'mipsel-linux-gnu-gcc',
+        'powerpc':   'powerpc-linux-gnu-gcc',
+        'powerpc64': 'powerpc64-linux-gnu-gcc',
+        'riscv64':   'riscv64-linux-gnu-gcc',
+        's390x':     's390x-linux-gnu-gcc',
+        'sh4':       'sh4-linux-gnu-gcc',
+        'sparc64':   'sparc64-linux-gnu-gcc',
+    }
+    archs = list(sorted(arch_to_gcc.keys()))
 
-    def gen_binaries(self, src: Source,
+    def gen_binaries(self,
+                     src: Source,
                      gcc_archs: Optional[Sequence[str]] = None,
                      gcc_opt_levels: Optional[Sequence[str]] = None,
                      **kwargs) -> Iterator[Binary]:
         """Generate Binary objects for this tool given parameters"""
-        arch_to_gcc = {
-            'x86':     'gcc',
-            'x86_64':  'gcc',
-            'aarch64': 'aarch64-linux-gnu-gcc',
-            'mips':    'mips-linux-gnu-gcc',
-            'mipsel':  'mipsel-linux-gnu-gcc',
-        }
         if gcc_archs is None:
-            gcc_archs = list(sorted(arch_to_gcc.keys()))
+            gcc_archs = self.archs
         if gcc_opt_levels is None:
             gcc_opt_levels = ['-Og', '-O1', '-O2', '-O3']
         arch_cflags = {
@@ -88,25 +101,27 @@ class GccTool(Tool):
             for opt in gcc_opt_levels:
                 cflags = arch_cflags.get(arch, []) + [opt] + extra_cflags
                 path = self.gen_output_path((arch, opt, src.path))
-                cmd = [arch_to_gcc[arch], '-o', path] + cflags + [src.path]
+                cmd = [self.arch_to_gcc[arch], '-o', path] + cflags + [src.path]
                 yield Binary(src, arch, self, cmd, path)
 
 
 class ClangTool(Tool):
     """Clang compiler"""
     name = 'clang'
+    arch_to_clang = {
+        'x86':    'clang',
+        'x86_64': 'clang',
+    }
+    archs = list(sorted(arch_to_clang.keys()))
 
-    def gen_binaries(self, src: Source,
+    def gen_binaries(self,
+                     src: Source,
                      clang_archs: Optional[Sequence[str]] = None,
                      clang_opt_levels: Optional[Sequence[str]] = None,
                      **kwargs) -> Iterator[Binary]:
         """Generate Binary objects for this tool given parameters"""
-        arch_to_clang = {
-            'x86':    'clang',
-            'x86_64': 'clang',
-        }
         if clang_archs is None:
-            clang_archs = list(sorted(arch_to_clang.keys()))
+            clang_archs = self.archs
         if clang_opt_levels is None:
             clang_opt_levels = ['-Og', '-O1', '-O2', '-O3']
         arch_cflags = {
@@ -117,27 +132,28 @@ class ClangTool(Tool):
             for opt in clang_opt_levels:
                 cflags = arch_cflags.get(arch, []) + [opt] + extra_cflags
                 path = self.gen_output_path((arch, opt, src.path))
-                cmd = [arch_to_clang[arch], '-o', path] + cflags + [src.path]
+                cmd = [self.arch_to_clang[arch], '-o', path] + cflags + [src.path]
                 yield Binary(src, arch, self, cmd, path)
 
 
 class MsvcTool(Tool):
     """MSVC compiler"""
     name = 'msvc'
+    archs = ['x86', 'x86_64']
 
-    def gen_binaries(self, src: Source,
+    def gen_binaries(self,
+                     src: Source,
                      msvc_archs: Optional[Sequence[str]] = None,
                      msvc_opt_levels: Optional[Sequence[str]] = None,
                      **kwargs) -> Iterator[Binary]:
         """Generate Binary objects for this tool given parameters"""
-        extra_cflags = []
-        all_msvc_archs = ['x86', 'x86_64']
         if msvc_archs is None:
-            msvc_archs = all_msvc_archs
+            msvc_archs = self.archs
         if msvc_opt_levels is None:
             msvc_opt_levels = ['/Od', '/O1', '/O2']
+        extra_cflags = []
         for arch in msvc_archs:
-            assert arch in all_msvc_archs
+            assert arch in self.archs
             for opt in msvc_opt_levels:
                 cflags = [opt] + extra_cflags
                 path = self.gen_output_path((arch, opt, src.path)) + '.exe'
@@ -189,9 +205,9 @@ def main():
         else:
             selected_tools = all_tools
 
-        all_archs = ['x86', 'x86_64', 'aarch64', 'mips', 'mipsel']
+        all_archs = set(itertools.chain(t.archs for t in all_tools))
         if args.arch:
-            unknown_archs = set(args.arch).difference(set(all_archs))
+            unknown_archs = set(args.arch).difference(all_archs)
             if len(unknown_archs):
                 log.error('Unknown arch(s): %s', unknown_archs)
                 sys.exit(1)
