@@ -1,13 +1,49 @@
 on: push
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  build-windowns:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - msvc_name: 'x86'
+            build_name: 'x86'
+          - msvc_name: 'x64'
+            build_name: 'x86_64'
     steps:
+      - name: clone
+        uses: actions/checkout@v2
+      - uses: TheMrMilchmann/setup-msvc-dev@v2
+        with:
+          arch: ${{ matrix.msvc_name }}
+      - name: build (${{ matrix.build_name }})
+        run: python test.py build --tool msvc --arch ${{ matrix.build_name }}
+      - name: put artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries-${{ matrix.build_name }}
+          path: binaries
+  build-ubuntu:
+    runs-on: ubuntu-latest
       - name: deps
         run: sudo apt-get install -qq build-essential gcc-multilib clang
       - name: clone
         uses: actions/checkout@v2
       - name: build
-        run: python test.py build
+        run: python test.py build --tool gcc clang
+      - name: put artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries-ubuntu
+          path: binaries
+  test:
+    needs: [build-windows, build-ubuntu]
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone
+        uses: actions/checkout@v2
+      - name: get artifacts
+        uses: actions/download-artifact@v2
+      - name: list
+        run: find .
       - name: test
         run: python test.py
