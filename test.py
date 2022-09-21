@@ -29,7 +29,7 @@ class BasicTest(unittest.TestCase):
             return 0;
         }
         ''')
-    def test_demo(binary: Binary):
+    def test_demo(self, binary: Binary):
         path = binary.path
         subprocess.check_call(['file', path])
         import angr

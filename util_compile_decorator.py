@@ -60,6 +60,37 @@ class Tool:
         return os.path.join(binaries_dir, 'b_' + gen_hash_str(hashable))
 
 
+class ClangTool(Tool):
+    """Clang compiler"""
+    name = 'clang'
+    arch_to_clang = {
+        'x86':    'clang',
+        'x86_64': 'clang',
+    }
+    archs = list(sorted(arch_to_clang.keys()))
+
+    def gen_binaries(self,
+                     src: Source,
+                     clang_archs: Optional[Sequence[str]] = None,
+                     clang_opt_levels: Optional[Sequence[str]] = None,
+                     **kwargs) -> Iterator[Binary]:
+        """Generate Binary objects for this tool given parameters"""
+        if clang_archs is None:
+            clang_archs = self.archs
+        if clang_opt_levels is None:
+            clang_opt_levels = ['-Og', '-O1', '-O2', '-O3']
+        arch_cflags = {
+            'x86': ['-m32']
+        }
+        extra_cflags = ['-Wall']
+        for arch in clang_archs:
+            for opt in clang_opt_levels:
+                cflags = arch_cflags.get(arch, []) + [opt] + extra_cflags
+                path = self.gen_output_path((arch, opt, src.path))
+                cmd = [self.arch_to_clang[arch], '-o', path] + cflags + [src.path]
+                yield Binary(src, arch, self, cmd, path)
+
+
 class GccTool(Tool):
     """GCC compiler"""
     name = 'gcc'
@@ -108,37 +139,6 @@ class GccTool(Tool):
                 yield Binary(src, arch, self, cmd, path)
 
 
-class ClangTool(Tool):
-    """Clang compiler"""
-    name = 'clang'
-    arch_to_clang = {
-        'x86':    'clang',
-        'x86_64': 'clang',
-    }
-    archs = list(sorted(arch_to_clang.keys()))
-
-    def gen_binaries(self,
-                     src: Source,
-                     clang_archs: Optional[Sequence[str]] = None,
-                     clang_opt_levels: Optional[Sequence[str]] = None,
-                     **kwargs) -> Iterator[Binary]:
-        """Generate Binary objects for this tool given parameters"""
-        if clang_archs is None:
-            clang_archs = self.archs
-        if clang_opt_levels is None:
-            clang_opt_levels = ['-Og', '-O1', '-O2', '-O3']
-        arch_cflags = {
-            'x86': ['-m32']
-        }
-        extra_cflags = ['-Wall']
-        for arch in clang_archs:
-            for opt in clang_opt_levels:
-                cflags = arch_cflags.get(arch, []) + [opt] + extra_cflags
-                path = self.gen_output_path((arch, opt, src.path))
-                cmd = [self.arch_to_clang[arch], '-o', path] + cflags + [src.path]
-                yield Binary(src, arch, self, cmd, path)
-
-
 class MsvcTool(Tool):
     """MSVC compiler"""
     name = 'msvc'
@@ -164,10 +164,10 @@ class MsvcTool(Tool):
                 yield Binary(src, arch, self, cmd, path)
 
 
-gcc = GccTool()
 clang = ClangTool()
+gcc = GccTool()
 msvc = MsvcTool()
-all_tools = [gcc, clang, msvc]
+all_tools = [clang, gcc, msvc]
 all_binaries = []
 
 
@@ -185,7 +185,7 @@ def compiled(text: str, tools: Optional[Sequence[Tool]] = None, **kwargs):
                     log.info('Running test %s with binary %s', inner.__name__, binary)
                     if not os.path.exists(binary.path):
                         raise FileNotFoundError('Binary not available for testing')
-                    inner(binary)
+                    inner(self, binary)
         return outer
     return make_decorator
 
