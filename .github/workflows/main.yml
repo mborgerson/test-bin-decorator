@@ -7,7 +7,7 @@ jobs:
         include:
           - { build_name: 'x86', msvc_name: 'x86' }
           - { build_name: 'x86_64', msvc_name: 'x64' }
-    name: build windows (${{ matrix.build_name }})
+    name: build on windows (for ${{ matrix.build_name }})
     steps:
       - name: clone
         uses: actions/checkout@v2
@@ -22,6 +22,7 @@ jobs:
           name: binaries-${{ matrix.build_name }}
           path: binaries
   build-ubuntu:
+    name: build on ubuntu
     runs-on: ubuntu-latest
     steps:
       - name: deps
