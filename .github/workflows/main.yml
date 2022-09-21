@@ -37,7 +37,7 @@ jobs:
           name: binaries-ubuntu
           path: binaries
   test:
-    needs: [build-windows, build-ubuntu]
+    needs: ['build-windows', 'build-ubuntu']
     runs-on: ubuntu-latest
     steps:
       - name: clone
