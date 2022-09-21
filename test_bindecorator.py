@@ -141,7 +141,7 @@ class MsvcTool(Tool):
 gcc = GccTool()
 clang = ClangTool()
 msvc = MsvcTool()
-all_tools = [gcc, clang]#, msvc]
+all_tools = [gcc, clang, msvc]
 all_binaries = []
 
 

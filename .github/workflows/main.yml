@@ -9,13 +9,14 @@ jobs:
             build_name: 'x86'
           - msvc_name: 'x64'
             build_name: 'x86_64'
+    name: build windows (${{ matrix.build_name }})
     steps:
       - name: clone
         uses: actions/checkout@v2
       - uses: TheMrMilchmann/setup-msvc-dev@v2
         with:
           arch: ${{ matrix.msvc_name }}
-      - name: build (${{ matrix.build_name }})
+      - name: build
         run: python test.py build --tool msvc --arch ${{ matrix.build_name }}
       - name: put artifacts
         uses: actions/upload-artifact@v2
