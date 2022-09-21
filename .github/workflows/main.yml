@@ -28,7 +28,8 @@ jobs:
     steps:
       - name: deps
         run: |
-          sudo apt-get update
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update -qy
           sudo apt-get install -qq \
             build-essential \
             clang \
