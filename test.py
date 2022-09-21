@@ -1,7 +1,7 @@
 import logging
 import unittest
 # import angr
-from test_bindecorator import compiled, main, Binary
+from compile_decorator import compiled, main, Binary
 import subprocess
 
 log = logging.getLogger(__name__)
