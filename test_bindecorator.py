@@ -129,7 +129,7 @@ class MsvcTool(Tool):
 			assert arch in all_msvc_archs
 			for opt in msvc_opt_levels:
 				cflags = [opt] + extra_cflags
-				path = self.gen_output_path((opt, src.path))
+				path = self.gen_output_path((arch, opt, src.path))
 				cmd = ['cl.exe', '/Fe:' + path] + cflags + [src.path]
 				yield Binary(src, arch, self, cmd, path)
 
