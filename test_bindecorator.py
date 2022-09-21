@@ -80,6 +80,8 @@ class GccTool(Tool):
         's390x':     's390x-linux-gnu-gcc',
         'sh4':       'sh4-linux-gnu-gcc',
         'sparc64':   'sparc64-linux-gnu-gcc',
+        # arch_avr
+        # arch_soot
     }
     archs = list(sorted(arch_to_gcc.keys()))
 
@@ -205,7 +207,7 @@ def main():
         else:
             selected_tools = all_tools
 
-        all_archs = set(itertools.chain(t.archs for t in all_tools))
+        all_archs = set(itertools.chain.from_iterable(t.archs for t in all_tools))
         if args.arch:
             unknown_archs = set(args.arch).difference(all_archs)
             if len(unknown_archs):
