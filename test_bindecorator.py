@@ -189,7 +189,7 @@ def main():
         else:
             selected_tools = all_tools
 
-        all_archs = ['x86', 'x86_64']#, 'aarch64', 'mips', 'mipsel']
+        all_archs = ['x86', 'x86_64', 'aarch64', 'mips', 'mipsel']
         if args.arch:
             unknown_archs = set(args.arch).difference(set(all_archs))
             if len(unknown_archs):
