@@ -2,7 +2,6 @@ on: push
 jobs:
   discovery:
     runs-on: ubuntu-latest
-    name: check
     steps:
       - name: clone
         uses: actions/checkout@v2

@@ -168,15 +168,17 @@ class MsvcTool(Tool):
         if kwargs.get('compile_without_linking', False):
             extra_cflags.append('/c')
             output_ext = '.obj'
+            output_switch = '/Fo'
         else:
             output_ext = '.exe'
+            output_switch = '/Fe:'
 
         for arch in msvc_archs:
             assert arch in self.archs
             for opt in msvc_opt_levels:
                 cflags = [opt] + extra_cflags
                 path = self.gen_output_path((arch, opt, src.path)) + output_ext
-                cmd = ['cl.exe', '/Fe:' + path] + cflags + [src.path]
+                cmd = ['cl.exe', output_switch + path] + cflags + [src.path]
                 yield Binary(src, arch, self, cmd, path)
 
 
