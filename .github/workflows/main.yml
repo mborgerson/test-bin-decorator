@@ -108,4 +108,4 @@ jobs:
       - name: deps
         run: pip install --user angr
       - name: test
-        run: python -m test_sample.py
+        run: python test_sample.py
