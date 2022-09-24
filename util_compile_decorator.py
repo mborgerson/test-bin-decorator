@@ -13,7 +13,6 @@ from dataclasses import dataclass
 
 
 log = logging.getLogger(__name__)
-# root_dir = os.path.dirname(os.path.realpath(__file__))
 binaries_dir = os.path.join('.', 'binaries')
 
 
@@ -74,7 +73,7 @@ class ClangTool(Tool):
         if clang_archs is None:
             clang_archs = self.archs
         if clang_opt_levels is None:
-            clang_opt_levels = ['-Og', '-O1', '-O2', '-O3']
+            clang_opt_levels = ['-Og', '-Os', '-O1', '-O2', '-O3']
         arch_cflags = {
             'x86': ['-m32']
         }
@@ -130,7 +129,7 @@ class GccTool(Tool):
         if gcc_archs is None:
             gcc_archs = self.archs
         if gcc_opt_levels is None:
-            gcc_opt_levels = ['-Og', '-O1', '-O2', '-O3']
+            gcc_opt_levels = ['-Og', '-Os', '-O1', '-O2', '-O3']
         arch_cflags = {
             'x86': ['-m32']
         }
