@@ -3,21 +3,36 @@ jobs:
   discovery:
     runs-on: ubuntu-latest
     steps:
-      - name: clone
-        uses: actions/checkout@v2
-      # FIXME: Set up typical angr test environment. Test discovery will perform normal test imports, so install angr
-      #        for now
-      - name: deps
-        run: pip install --user angr
-      - name: discover
-        run: python util_compile_main.py --discover --save manifest.json
-      - name: put manifest
-        uses: actions/upload-artifact@v2
-        with:
-          name: manifest.json
-          path: manifest.json
-      # FIXME: Add binary artifact cache
+    - name: clone
+      uses: actions/checkout@v2
+    # FIXME: Set up typical angr test environment. Test discovery will perform normal test imports, so install angr
+    #        for now
+    - name: deps
+      run: pip install --user angr
+    - name: discover
+      run: python util_compile_main.py --discover --save manifest.json
+    - name: put manifest
+      uses: actions/upload-artifact@v3
+      with:
+        name: manifest.json
+        path: manifest.json
+
       # FIXME: Run check to determine if build steps can be fixed
+
+    - name: binary cache
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: binaries
+        key: cache-${{ github.sha }}-discovery
+        restore-keys: cache-
+    - name: list cache
+      run: find binaries
+    - name: put artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries-discovery
+        path: binaries
 
   build-windows:
     needs: discovery
@@ -26,26 +41,31 @@ jobs:
     strategy:
       matrix:
         include:
-          - { build_name: 'x86',    msvc_name: 'x86' }
-          - { build_name: 'x86_64', msvc_name: 'x64' }
+        - { build_name: 'x86',    msvc_name: 'x86' }
+        - { build_name: 'x86_64', msvc_name: 'x64' }
     name: build on windows (for ${{ matrix.build_name }})
     steps:
-      - name: clone
-        uses: actions/checkout@v2
-      - name: get manifest
-        uses: actions/download-artifact@v2
-        with:
-          name: manifest.json
-      - uses: TheMrMilchmann/setup-msvc-dev@v2
-        with:
-          arch: ${{ matrix.msvc_name }}
-      - name: build
-        run: python util_compile_main.py --load manifest.json --tool msvc --arch ${{ matrix.build_name }} --build
-      - name: put artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: binaries-${{ matrix.build_name }}
-          path: binaries
+    - name: clone
+      uses: actions/checkout@v2
+    - name: get manifest
+      uses: actions/download-artifact@v3
+      with:
+        name: manifest.json
+    - name: get cached binaries
+      uses: actions/download-artifact@v3
+      with:
+        name: binaries-discovery
+        path: binaries
+    - uses: TheMrMilchmann/setup-msvc-dev@v2
+      with:
+        arch: ${{ matrix.msvc_name }}
+    - name: build
+      run: python util_compile_main.py --load manifest.json --tool msvc --arch ${{ matrix.build_name }} --build
+    - name: put artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries-win-${{ matrix.build_name }}
+        path: binaries
 
   build-ubuntu:
     needs: discovery
@@ -53,59 +73,74 @@ jobs:
     runs-on: ubuntu-latest
     # FIXME: Skip job if cache provides all bins
     steps:
-      - name: deps
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update -qy
-          sudo apt-get install -y clang
-          sudo apt-get install -y gcc-multilib
-          sudo apt-get install -y \
-            gcc-aarch64-linux-gnu \
-            gcc-alpha-linux-gnu \
-            gcc-arm-linux-gnueabi \
-            gcc-hppa-linux-gnu \
-            gcc-m68k-linux-gnu \
-            gcc-mips-linux-gnu \
-            gcc-mips64-linux-gnuabi64 \
-            gcc-mipsel-linux-gnu \
-            gcc-powerpc-linux-gnu \
-            gcc-powerpc64-linux-gnu \
-            gcc-riscv64-linux-gnu \
-            gcc-s390x-linux-gnu \
-            gcc-sh4-linux-gnu \
-            gcc-sparc64-linux-gnu
-      - name: clone
-        uses: actions/checkout@v2
-      - name: get manifest
-        uses: actions/download-artifact@v2
-        with:
-          name: manifest.json
-      - name: build
-        run: python util_compile_main.py --load manifest.json --tool gcc clang --build
-      - name: put artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: binaries-ubuntu
-          path: binaries
+    - name: deps
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get update -qy
+        sudo apt-get install -y clang
+        sudo apt-get install -y gcc-multilib
+        sudo apt-get install -y \
+          gcc-aarch64-linux-gnu \
+          gcc-alpha-linux-gnu \
+          gcc-arm-linux-gnueabi \
+          gcc-hppa-linux-gnu \
+          gcc-m68k-linux-gnu \
+          gcc-mips-linux-gnu \
+          gcc-mips64-linux-gnuabi64 \
+          gcc-mipsel-linux-gnu \
+          gcc-powerpc-linux-gnu \
+          gcc-powerpc64-linux-gnu \
+          gcc-riscv64-linux-gnu \
+          gcc-s390x-linux-gnu \
+          gcc-sh4-linux-gnu \
+          gcc-sparc64-linux-gnu
+    - name: clone
+      uses: actions/checkout@v2
+    - name: get manifest
+      uses: actions/download-artifact@v3
+      with:
+        name: manifest.json
+    - name: get cached binaries
+      uses: actions/download-artifact@v3
+      with:
+        name: binaries-discovery
+        path: binaries
+    - name: build
+      run: python util_compile_main.py --load manifest.json --tool gcc clang --build
+    - name: put artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries-ubuntu
+        path: binaries
 
   test:
-    needs: [build-windows, build-ubuntu]
+    needs: [discovery, build-windows, build-ubuntu]
     runs-on: ubuntu-latest
     steps:
-      - name: clone
-        uses: actions/checkout@v2
-      - name: get artifacts
-        uses: actions/download-artifact@v2
-      - name: list
-        run: find .
-      - name: merge artifacts
-        run: mkdir -p binaries; mv binaries-*/* binaries; rmdir binaries-*
-      - name: put artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: binaries-all
-          path: binaries
-      - name: deps
-        run: pip install --user angr
-      - name: test
-        run: python test_sample.py
+
+    - name: binary cache
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: binaries
+        key: cache-${{ github.sha }}-final
+        restore-keys: cache-${{ github.sha }}-
+    - name: list cache
+      run: find binaries
+    - name: clone
+      uses: actions/checkout@v2
+    - name: get artifacts
+      uses: actions/download-artifact@v3
+    - name: list
+      run: find .
+    - name: merge artifacts
+      run: mkdir -p binaries; mv -u binaries-*/* binaries; rmdir binaries-*
+    - name: put artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries-all
+        path: binaries
+    - name: deps
+      run: pip install --user angr
+    - name: test
+      run: python test_sample.py
