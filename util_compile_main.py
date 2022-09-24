@@ -17,7 +17,6 @@ binaries_dir = os.path.join(root_dir, 'binaries')
 
 
 def main():
-    global all_binaries
     logging.basicConfig(level=logging.INFO)
 
     ap = argparse.ArgumentParser()
@@ -31,34 +30,33 @@ def main():
     args = ap.parse_args()
 
     name_to_tool = {t.name: t for t in all_tools}
+    binaries = []
 
     # Discover all tests, importing test modules and populating `all_binaries` global with set of binaries to target
     if args.discover:
         log.info('Discovering tests...')
         unittest.TestLoader().discover(root_dir)
-        log.info('Discovered %d binary definitions', len(all_binaries))
+        binaries = all_binaries
+        log.info('Discovered %d binary definitions', len(binaries))
 
     if args.save:
         log.info('Saving binary manifest...')
         with open(args.save, 'w', encoding='utf-8') as f:
             json.dump({
-                'sources': list({b.src.text for b in all_binaries}),
+                'sources': list({b.src.text for b in binaries}),
                 'binaries': [{'src': b.src.path, 'arch': b.arch, 'tool': b.tool.name, 'cmd': b.cmd, 'path': b.path}
-                             for b in all_binaries]
+                             for b in binaries]
                 }, f, indent=2)
-            log.info('Saved %d binary definitions', len(all_binaries))
+            log.info('Saved %d binary definitions', len(binaries))
 
     if args.load:
         log.info('Loading binary manifest...')
         with open(args.load, 'r', encoding='utf-8') as f:
             serialized = json.load(f)
             path_to_src = {s.path: s for s in [Source(text=text) for text in serialized['sources']]}
-            all_binaries = [Binary(src=path_to_src[b['src']],
-                                   arch=b['arch'],
-                                   tool=name_to_tool[b['tool']],
-                                   cmd=b['cmd'],
-                                   path=b['path']) for b in serialized['binaries']]
-            log.info('Loaded %d binary definitions', len(all_binaries))
+            binaries = [Binary(src=path_to_src[b['src']], arch=b['arch'], tool=name_to_tool[b['tool']], cmd=b['cmd'],
+                               path=b['path']) for b in serialized['binaries']]
+            log.info('Loaded %d binary definitions', len(binaries))
 
     # Filter by selected tools
     if args.tool:
@@ -83,8 +81,9 @@ def main():
 
     # Build
     if args.build:
+        num_built = 0
         os.makedirs(binaries_dir, exist_ok=True)
-        for binary in all_binaries:
+        for binary in binaries:
             if binary.tool not in selected_tools or binary.arch not in selected_archs:
                 continue
 
@@ -96,11 +95,14 @@ def main():
                 log.info('Running: %s', ' '.join(binary.cmd))
                 subprocess.check_call(binary.cmd)
                 assert os.path.exists(binary.path)
+                num_built += 1
+
+        log.info('Built %d binaries', num_built)
 
     # Check if all binaries are available
     if args.check:
         all_available = True
-        for binary in all_binaries:
+        for binary in binaries:
             if binary.tool not in selected_tools or binary.arch not in selected_archs:
                 continue
             if not os.path.exists(binary.path):
