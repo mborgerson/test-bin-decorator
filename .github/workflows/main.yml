@@ -27,7 +27,7 @@ jobs:
         key: cache-${{ github.sha }}-discovery
         restore-keys: cache-
     - name: list cache
-      run: mkdir -p binaries; find binaries
+      run: mkdir -p binaries; find binaries; touch binaries/dummy
     - name: put artifacts
       uses: actions/upload-artifact@v3
       with:
