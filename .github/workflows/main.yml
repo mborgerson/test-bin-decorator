@@ -117,7 +117,6 @@ jobs:
     needs: [discovery, build-windows, build-ubuntu]
     runs-on: ubuntu-latest
     steps:
-
     - name: binary cache
       id: cache
       uses: actions/cache@v3
@@ -136,7 +135,7 @@ jobs:
     - name: merge artifacts
       run: |
         mkdir -p binaries
-        find binaries-* -type f -exec mv \{} binaries/\{} \;
+        for d in binaries-; do mv $d/* binaries; done
         rmdir binaries-*
     - name: put artifacts
       uses: actions/upload-artifact@v3
