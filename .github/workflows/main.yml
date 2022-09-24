@@ -134,7 +134,10 @@ jobs:
     - name: list
       run: find .
     - name: merge artifacts
-      run: mkdir -p binaries; find binaries-* -type f -exec mv \{} binaries/\{} \; rmdir binaries-*
+      run: |
+        mkdir -p binaries
+        find binaries-* -type f -exec mv \{} binaries/\{} \;
+        rmdir binaries-*
     - name: put artifacts
       uses: actions/upload-artifact@v3
       with:
