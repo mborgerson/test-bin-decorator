@@ -135,7 +135,7 @@ jobs:
     - name: merge artifacts
       run: |
         mkdir -p binaries
-        for d in binaries-; do mv $d/* binaries; done
+        for d in binaries-*; do mv $d/* binaries; done
         rmdir binaries-*
     - name: put artifacts
       uses: actions/upload-artifact@v3
