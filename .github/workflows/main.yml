@@ -1,6 +1,6 @@
 on: push
 jobs:
-  check:
+  discovery:
     runs-on: ubuntu-latest
     name: check
     steps:
@@ -18,9 +18,10 @@ jobs:
           name: manifest.json
           path: manifest.json
       # FIXME: Add binary artifact cache
-      # FIXME: Run pre-check to determine if build steps can be fixed
+      # FIXME: Run check to determine if build steps can be fixed
 
   build-windows:
+    needs: discovery
     runs-on: windows-latest
     # FIXME: Skip job if cache provides all bins
     strategy:
@@ -48,6 +49,7 @@ jobs:
           path: binaries
 
   build-ubuntu:
+    needs: discovery
     name: build on ubuntu
     runs-on: ubuntu-latest
     # FIXME: Skip job if cache provides all bins
