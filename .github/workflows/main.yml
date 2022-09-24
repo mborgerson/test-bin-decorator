@@ -27,7 +27,7 @@ jobs:
         key: cache-${{ github.sha }}-discovery
         restore-keys: cache-
     - name: list cache
-      run: find binaries
+      run: mkdir -p binaries; find binaries
     - name: put artifacts
       uses: actions/upload-artifact@v3
       with:
@@ -126,7 +126,7 @@ jobs:
         key: cache-${{ github.sha }}-final
         restore-keys: cache-${{ github.sha }}-
     - name: list cache
-      run: find binaries
+      run: mkdir -p binaries; find binaries
     - name: clone
       uses: actions/checkout@v2
     - name: get artifacts
