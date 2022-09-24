@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
 import logging
 import unittest
 import subprocess
 
-from util_compile_decorator import compiled, main, Binary
+import angr
+
+import util_compile_decorator
+from util_compile_decorator import compiled, Binary
 
 
 log = logging.getLogger(__name__)
@@ -29,13 +33,11 @@ class BasicTest(unittest.TestCase):
             return 0;
         }
         ''')
-    def test_demo(self, binary: Binary):
-        path = binary.path
-        subprocess.check_call(['file', path])
-        import angr
-        proj = angr.Project(path, auto_load_libs=False)
+    def test_executable(self, binary: Binary):
+        subprocess.check_call(['file', binary.path])
+        proj = angr.Project(binary.path, auto_load_libs=False)
         print(proj)
 
 
 if __name__ == '__main__':
-    main()
+    unittest.main()

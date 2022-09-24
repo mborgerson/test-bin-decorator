@@ -1,15 +1,11 @@
-#!/usr/bin/env python3
 """
-Test suite to parameterize over binaries compiled with various tools for multiple architectures from same source code.
+Utilities to parameterize tests with source code compiled with different tools, architectures, and compilation flags.
 """
 
-import argparse
 import hashlib
 import itertools
 import logging
 import os
-import subprocess
-import sys
 import unittest
 
 from typing import Iterator, Sequence, Any, Optional
@@ -17,8 +13,8 @@ from dataclasses import dataclass
 
 
 log = logging.getLogger(__name__)
-root_dir = os.path.dirname(os.path.realpath(__file__))
-binaries_dir = os.path.join(root_dir, 'binaries')
+# root_dir = os.path.dirname(os.path.realpath(__file__))
+binaries_dir = os.path.join('.', 'binaries')
 
 
 def gen_hash_str(hashable):
@@ -83,10 +79,16 @@ class ClangTool(Tool):
             'x86': ['-m32']
         }
         extra_cflags = ['-Wall']
+        if kwargs.get('compile_without_linking', False):
+            extra_cflags.append('-c')
+            output_ext = '.o'
+        else:
+            output_ext = ''
+
         for arch in clang_archs:
             for opt in clang_opt_levels:
                 cflags = arch_cflags.get(arch, []) + [opt] + extra_cflags
-                path = self.gen_output_path((arch, opt, src.path))
+                path = self.gen_output_path((arch, opt, src.path)) + output_ext
                 cmd = [self.arch_to_clang[arch], '-o', path] + cflags + [src.path]
                 yield Binary(src, arch, self, cmd, path)
 
@@ -98,17 +100,19 @@ class GccTool(Tool):
         'x86':       'gcc',
         'x86_64':    'gcc',
         'aarch64':   'aarch64-linux-gnu-gcc',
-        # 'alpha':     'alpha-linux-gnu-gcc',
         'arm':       'arm-linux-gnueabi-gcc',
-        # 'hppa':      'hppa-linux-gnu-gcc',
-        # 'm68k':      'm68k-linux-gnu-gcc',
         'mips':      'mips-linux-gnu-gcc',
         'mips64':    'mips64-linux-gnuabi64-gcc',
         'mipsel':    'mipsel-linux-gnu-gcc',
         'powerpc':   'powerpc-linux-gnu-gcc',
         'powerpc64': 'powerpc64-linux-gnu-gcc',
-        # 'riscv64':   'riscv64-linux-gnu-gcc',
         's390x':     's390x-linux-gnu-gcc',
+
+        # FIXME: Automatic object load for these architectures before making test default
+        # 'alpha':     'alpha-linux-gnu-gcc',
+        # 'hppa':      'hppa-linux-gnu-gcc',
+        # 'm68k':      'm68k-linux-gnu-gcc',
+        # 'riscv64':   'riscv64-linux-gnu-gcc',
         # 'sh4':       'sh4-linux-gnu-gcc',
         # 'sparc64':   'sparc64-linux-gnu-gcc',
 
@@ -131,10 +135,16 @@ class GccTool(Tool):
             'x86': ['-m32']
         }
         extra_cflags = ['-Wall']
+        if kwargs.get('compile_without_linking', False):
+            extra_cflags.append('-c')
+            output_ext = '.o'
+        else:
+            output_ext = ''
+
         for arch in gcc_archs:
             for opt in gcc_opt_levels:
                 cflags = arch_cflags.get(arch, []) + [opt] + extra_cflags
-                path = self.gen_output_path((arch, opt, src.path))
+                path = self.gen_output_path((arch, opt, src.path)) + output_ext
                 cmd = [self.arch_to_gcc[arch], '-o', path] + cflags + [src.path]
                 yield Binary(src, arch, self, cmd, path)
 
@@ -155,11 +165,17 @@ class MsvcTool(Tool):
         if msvc_opt_levels is None:
             msvc_opt_levels = ['/Od', '/O1', '/O2']
         extra_cflags = []
+        if kwargs.get('compile_without_linking', False):
+            extra_cflags.append('/c')
+            output_ext = '.obj'
+        else:
+            output_ext = '.exe'
+
         for arch in msvc_archs:
             assert arch in self.archs
             for opt in msvc_opt_levels:
                 cflags = [opt] + extra_cflags
-                path = self.gen_output_path((arch, opt, src.path)) + '.exe'
+                path = self.gen_output_path((arch, opt, src.path)) + output_ext
                 cmd = ['cl.exe', '/Fe:' + path] + cflags + [src.path]
                 yield Binary(src, arch, self, cmd, path)
 
@@ -172,7 +188,42 @@ all_binaries = []
 
 
 def compiled(text: str, tools: Optional[Sequence[Tool]] = None, **kwargs):
-    """Test case decorator to parameterize a test over generated binaries"""
+    """
+    Decorator to parameterize a test with source code compiled using different tools, targeting multiple architectures
+    with different compilation flags.
+
+    When used to decorate a function, the decorator input argument `text` is processed with the set of `tools` to
+    produce a number of different binaries. The function being decorated is replaced with a wrapper function that runs
+    the test, as a subtest, on each binary produced by the tools. The prototype of the test function is expected to be
+    of the form:
+
+        def testcase(self, binary: Binary):
+            ...
+
+    The path to the binary to be tested is accessible through the `binary.path` property.
+
+    Setup options
+    -------------
+    :param text:  Source code.
+    :param tools: List of tools to process `text` with to produce binaries.
+
+    Available tools are listed in this module under `all_tools`. There are general options that apply to all tools, and
+    tool-specific options available.
+
+    General options
+    ---------------
+    :param bool compile_without_linking: Compile only an object file, do not link to create an executable.
+
+    Tool-specific options
+    ---------------------
+    Each tool supports a number of CPU architectures. See tool `archs` property for list of supported architectures.
+    By default, all supported architectures will be targeted. You may specify a subset of architectures to build for
+    with one of the following keyword arguments.
+
+    :param Optional[Sequence[str]] msvc_archs   Target architectures for MSVC.
+    :param Optional[Sequence[str]] clang_archs: Target architectures for Clang.
+    :param Optional[Sequence[str]] gcc_archs:   Target architectures for GCC.
+    """
     if tools is None:
         tools = all_tools
     src = Source(text)
@@ -188,56 +239,3 @@ def compiled(text: str, tools: Optional[Sequence[Tool]] = None, **kwargs):
                     inner(self, binary)
         return outer
     return make_decorator
-
-
-def main():
-    if len(sys.argv) > 1 and sys.argv[1] == 'build':
-        logging.basicConfig(level=logging.INFO)
-        log.setLevel(logging.INFO)
-
-        ap = argparse.ArgumentParser()
-        ap.add_argument('--tool', nargs='*')
-        ap.add_argument('--arch', nargs='*')
-        args = ap.parse_args(sys.argv[2:])
-
-        if args.tool:
-            unknown_tools = set(args.tool).difference({t.name for t in all_tools})
-            if len(unknown_tools):
-                log.error('Unknown tool(s): %s', unknown_tools)
-                sys.exit(1)
-            selected_tools = {t for t in all_tools if t.name in args.tool}
-        else:
-            selected_tools = all_tools
-
-        all_archs = set(itertools.chain.from_iterable(t.archs for t in all_tools))
-        if args.arch:
-            unknown_archs = set(args.arch).difference(all_archs)
-            if len(unknown_archs):
-                log.error('Unknown arch(s): %s', unknown_archs)
-                sys.exit(1)
-            selected_archs = args.arch
-        else:
-            selected_archs = all_archs
-
-        os.makedirs(binaries_dir, exist_ok=True)
-
-        for binary in all_binaries:
-            if binary.tool not in selected_tools or binary.arch not in selected_archs:
-                continue
-
-            if not os.path.exists(binary.src.path):
-                with open(binary.src.path, 'w', encoding='utf-8') as f:
-                    f.write(binary.src.text)
-
-            if not os.path.exists(binary.path):
-                log.info('Running: %s', ' '.join(binary.cmd))
-                subprocess.check_call(binary.cmd)
-                assert os.path.exists(binary.path)
-
-    else:
-        # Run tests
-        unittest.main()
-
-
-if __name__ == '__main__':
-    main()

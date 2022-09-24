@@ -1,29 +1,56 @@
 on: push
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: check
+    steps:
+      - name: clone
+        uses: actions/checkout@v2
+      # FIXME: Set up typical angr test environment. Test discovery will perform normal test imports, so install angr
+      #        for now
+      - name: deps
+        run: pip install --user angr
+      - name: discover
+        run: python util_compile_main.py --discover --save manifest.json
+      - name: put manifest
+        uses: actions/upload-artifact@v2
+        with:
+          name: manifest.json
+          path: manifest.json
+      # FIXME: Add binary artifact cache
+      # FIXME: Run pre-check to determine if build steps can be fixed
+
   build-windows:
     runs-on: windows-latest
+    # FIXME: Skip job if cache provides all bins
     strategy:
       matrix:
         include:
-          - { build_name: 'x86', msvc_name: 'x86' }
+          - { build_name: 'x86',    msvc_name: 'x86' }
           - { build_name: 'x86_64', msvc_name: 'x64' }
     name: build on windows (for ${{ matrix.build_name }})
     steps:
       - name: clone
         uses: actions/checkout@v2
+      - name: get manifest
+        uses: actions/download-artifact@v2
+        with:
+          name: manifest.json
       - uses: TheMrMilchmann/setup-msvc-dev@v2
         with:
           arch: ${{ matrix.msvc_name }}
       - name: build
-        run: python test.py build --tool msvc --arch ${{ matrix.build_name }}
+        run: python util_compile_main.py --load manifest.json --tool msvc --arch ${{ matrix.build_name }} --build
       - name: put artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries-${{ matrix.build_name }}
           path: binaries
+
   build-ubuntu:
     name: build on ubuntu
     runs-on: ubuntu-latest
+    # FIXME: Skip job if cache provides all bins
     steps:
       - name: deps
         run: |
@@ -48,13 +75,18 @@ jobs:
             gcc-sparc64-linux-gnu
       - name: clone
         uses: actions/checkout@v2
+      - name: get manifest
+        uses: actions/download-artifact@v2
+        with:
+          name: manifest.json
       - name: build
-        run: python test.py build --tool gcc clang
+        run: python util_compile_main.py --load manifest.json --tool gcc clang --build
       - name: put artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries-ubuntu
           path: binaries
+
   test:
     needs: [build-windows, build-ubuntu]
     runs-on: ubuntu-latest
@@ -75,4 +107,4 @@ jobs:
       - name: deps
         run: pip install --user angr
       - name: test
-        run: python test.py
+        run: python -m test_sample.py
